@@ -1,6 +1,5 @@
 import linebot from 'linebot'
 import dotenv from 'dotenv'
-import axios from 'axios'
 
 import { GetMatchInfo, HaveCounty, HaveCity, GetDataBySelectCity, GetCountyName, IsSelectCorrect } from './js/twzipcode-data.js'
 import { SelectCityCountyStyle } from './js/city-county.js'
@@ -20,10 +19,8 @@ const bot = linebot({
 let selectCounty = ''
 let selectCity = ''
 let step = 0
-let isAwake = false
 
 bot.on('message', async (event) => {
-  AwakeTourismInfoServer()
   const message = ParseMessage(event.message.text)
   const style = []
   if (message !== '重置') {
@@ -83,13 +80,6 @@ bot.on('message', async (event) => {
     }
   })
 })
-
-const AwakeTourismInfoServer = () => {
-  if (!isAwake) {
-    axios.get(`${process.env.TOURISMINFO_API}/awake`)
-      .then(() => { isAwake = true })
-  }
-}
 
 bot.listen('/', process.env.PORT, async () => {
   console.log('機器人已啟動')
