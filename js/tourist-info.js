@@ -3,7 +3,7 @@ export const TouristInfoStyle = (selectCounty, selectCity) => {
   let offsetStart = '105px'
   if (text.length === 7) offsetStart = '95px'
   if (text.length === 5) offsetStart = '110px'
-  const url = `${process.env.APIURL}/type/` + encodeURI(`${selectCounty}/${selectCity}`)
+  const url = `${process.env.TOURISMINFO_URL}/type/` + encodeURI(`${selectCounty}/${selectCity}`)
   return {
     type: 'bubble',
     hero: {

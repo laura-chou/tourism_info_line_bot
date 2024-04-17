@@ -18,7 +18,7 @@ const bot = linebot({
 
 let selectCounty = ''
 let selectCity = ''
-let step = 0
+let step = 1
 
 bot.on('message', async (event) => {
   const message = ParseMessage(event.message.text)
