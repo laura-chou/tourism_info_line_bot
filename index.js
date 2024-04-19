@@ -1,5 +1,6 @@
 import linebot from 'linebot'
 import dotenv from 'dotenv'
+import axios from 'axios'
 
 import { GetMatchInfo, HaveCounty, HaveCity, GetDataBySelectCity, GetCountyName, IsSelectCorrect } from './js/twzipcode-data.js'
 import { SelectCityCountyStyle } from './js/city-county.js'
@@ -20,7 +21,7 @@ let selectCounty = ''
 let selectCity = ''
 let step = 1
 
-bot.on('message', async (event) => {
+bot.on('message', event => {
   const message = ParseMessage(event.message.text)
   const style = []
   if (message !== '重置') {
@@ -41,7 +42,11 @@ bot.on('message', async (event) => {
       step = 2
     }
 
-    if (IsSelectCorrect(selectCounty, selectCity) && !isMoreCounty) {
+    if (isMoreCounty) {
+      step = 1
+    }
+
+    if (IsSelectCorrect(selectCounty, selectCity)) {
       step = 3
     }
 
@@ -82,5 +87,26 @@ bot.on('message', async (event) => {
 })
 
 bot.listen('/', process.env.PORT, async () => {
-  console.log('機器人已啟動')
+  const headers = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${process.env.CHANNEL_ACCESS_TOKEN}`
+  }
+  const data = {
+    to: process.env.USERID,
+    messages: [
+      {
+        type: 'text',
+        text: '機器人已啟動\n您可以輸入縣市名稱開始查詢'
+      }
+    ]
+  }
+  axios.post('https://api.line.me/v2/bot/message/push', data, {
+    headers: headers
+  })
+    .then(response => {
+      console.log(response.status)
+    })
+    .catch(error => {
+      console.log(error.message)
+    })
 })
