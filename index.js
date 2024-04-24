@@ -1,6 +1,7 @@
-import linebot from 'linebot'
+import express from 'express'
+import cors from 'cors'
+import * as line from '@line/bot-sdk'
 import dotenv from 'dotenv'
-import axios from 'axios'
 
 import { GetMatchInfo, HaveCounty, HaveCity, GetDataBySelectCity, GetCountyName, IsSelectCorrect } from './js/twzipcode-data.js'
 import { SelectCityCountyStyle } from './js/city-county.js'
@@ -11,17 +12,53 @@ import { ParseMessage } from './js/parse-message.js'
 
 dotenv.config()
 
-const bot = linebot({
-  channelId: process.env.CHANNEL_ID,
-  channelSecret: process.env.CHANNEL_SECRET,
-  channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN
-})
+const app = express()
+const whitelist = process.env.WHITELIST.split(',')
+
+app.use(cors({
+  origin (origin, callback) {
+    console.log(origin)
+    if (process.env.ALLOW_CORS === 'true') {
+      callback(null, true)
+    } else if (whitelist.includes(origin) || !origin) {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed'), false)
+    }
+  },
+  credentials: true
+}))
+
+const config = {
+  channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN,
+  channelSecret: process.env.CHANNEL_SECRET
+}
+
+const client = new line.messagingApi.MessagingApiClient(config)
 
 let selectCounty = ''
 let selectCity = ''
 let step = 1
 
-bot.on('message', event => {
+app.get('/', (req, res) => {
+  res.status(200).send('')
+})
+
+app.post('/callback', line.middleware(config), (req, res) => {
+  Promise
+    .all(req.body.events.map(handleEvent))
+    .then((result) => res.json(result))
+    .catch((err) => {
+      console.error(err)
+      res.status(500).end()
+    })
+})
+
+function handleEvent (event) {
+  if (event.type !== 'message' || event.message.type !== 'text') {
+    return Promise.resolve(null)
+  }
+
   const message = ParseMessage(event.message.text)
   const style = []
   if (message !== '重置') {
@@ -76,37 +113,19 @@ bot.on('message', event => {
       break
   }
 
-  event.reply({
-    type: 'flex',
-    altText: '查詢結果',
-    contents: {
-      type: 'carousel',
-      contents: style
-    }
-  })
-})
-
-bot.listen('/', process.env.PORT, async () => {
-  const headers = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${process.env.CHANNEL_ACCESS_TOKEN}`
-  }
-  const data = {
-    to: process.env.USERID,
-    messages: [
-      {
-        type: 'text',
-        text: '機器人已啟動\n您可以輸入縣市名稱開始查詢'
+  return client.replyMessage({
+    replyToken: event.replyToken,
+    messages: [{
+      type: 'flex',
+      altText: '查詢結果',
+      contents: {
+        type: 'carousel',
+        contents: style
       }
-    ]
-  }
-  axios.post('https://api.line.me/v2/bot/message/push', data, {
-    headers: headers
+    }]
   })
-    .then(response => {
-      console.log(response.status)
-    })
-    .catch(error => {
-      console.log(error.message)
-    })
+}
+
+app.listen(process.env.PORT || 3000, () => {
+  console.log('start')
 })
