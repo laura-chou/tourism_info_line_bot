@@ -13,14 +13,10 @@ import { ParseMessage } from './js/parse-message.js'
 dotenv.config()
 
 const app = express()
-const whitelist = process.env.WHITELIST.split(',')
 
 app.use(cors({
   origin (origin, callback) {
-    console.log(origin)
-    if (process.env.ALLOW_CORS === 'true') {
-      callback(null, true)
-    } else if (whitelist.includes(origin) || !origin) {
+    if (process.env.ALLOW_CORS === 'true' || !origin) {
       callback(null, true)
     } else {
       callback(new Error('Not allowed'), false)
